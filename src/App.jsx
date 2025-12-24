@@ -1,21 +1,41 @@
-// App.js - Main App Component
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import {
+  BrowserRouter as Router,
+  Routes,
+  Route,
+  Navigate,
+} from "react-router-dom";
 import { useState, useEffect } from "react";
-import { useTheme, ThemeProvider } from "./components/Settings/themeUtils";
-import Sidebar from "./components/Sidebar/Sidebar";
-import Header from "./components/Header/Header";
-import DashboardOverview from "./pages/DashboardOverview";
-import DashboardAnalytics from "./pages/DashboardAnalytics";
-import DashboardReports from "./pages/DashboardReports";
-import PageLayouts from "./pages/PageLayouts";
-import LoginPage from "./pages/Logins/Login";
-import ForgotPasswordPage from "./pages/Logins/ForgotPass";
-import OTPVerificationPage from "./pages/Logins/OtpVerification";
-import ResetPasswordPage from "./pages/Logins/ResetPassword";
-import SignUpPage from "./pages/Logins/SignUp";
-import Profile from "./components/Profile/Profile";
-import Footer from "./components/Footer/Footer";
-import Setting from "./components/Settings/Settings";
+import { useTheme, ThemeProvider } from "./ui/Settings/themeUtils";
+import Sidebar from "./layout/Sidebar";
+import Header from "./layout/Header";
+import Dashboard from "./components/dashboard/Dashboard";
+import FaceRegistration from "./components/face-registration/FaceRegistration";
+import ProjectManagement from "./components/labour-list/ProjectManagement";
+import LiveAttendence from "./components/live-attendence/LiveAttendence";
+import LoginPage from "./(auth)/Login";
+import ForgotPasswordPage from "./(auth)/ForgotPass";
+import OTPVerificationPage from "./(auth)/OtpVerification";
+import ResetPasswordPage from "./(auth)/ResetPassword";
+import SignUpPage from "./(auth)/SignUp";
+import Profile from "./ui/Profile/Profile";
+import Footer from "./layout/Footer";
+import Setting from "./ui/Settings/Settings";
+import EvidenceGallery from "./components/evidence-gallery/EvidenceGallery";
+
+// Create a CSS string for the hide-scrollbar class
+const scrollbarStyles = `
+  .hide-scrollbar {
+    /* For IE and Edge */
+    -ms-overflow-style: none;
+    /* For Firefox */
+    scrollbar-width: none;
+  }
+  
+  .hide-scrollbar::-webkit-scrollbar {
+    /* For Chrome, Safari, and Opera */
+    display: none;
+  }
+`;
 
 const AppContent = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -25,39 +45,39 @@ const AppContent = () => {
   const [user, setUser] = useState(null);
   const { theme, themeUtils } = useTheme();
 
-  // Check if user is logged in on app start
   useEffect(() => {
     const userData = localStorage.getItem("user");
-
     if (userData) {
       setUser(JSON.parse(userData));
       setIsAuthenticated(true);
     }
     setLoading(false);
+    
+    // Inject the scrollbar styles into the document head
+    const styleElement = document.createElement('style');
+    styleElement.textContent = scrollbarStyles;
+    document.head.appendChild(styleElement);
+    
+    // Clean up on unmount
+    return () => {
+      document.head.removeChild(styleElement);
+    };
   }, []);
 
   const login = async (email, password) => {
-    try {
-      // Simple mock authentication with admin role only
-      if (email === "admin@example.com" && password === "password") {
-        const userData = {
-          id: 1,
-          name: "Admin User",
-          email: "admin@example.com",
-          role: "admin",
-        };
-
-        localStorage.setItem("user", JSON.stringify(userData));
-        setUser(userData);
-        setIsAuthenticated(true);
-
-        return { success: true, role: "admin" };
-      } else {
-        return { success: false, error: "Invalid credentials" };
-      }
-    } catch (error) {
-      return { success: false, error: error.message };
+    if (email === "admin@example.com" && password === "password") {
+      const userData = {
+        id: 1,
+        name: "Admin User",
+        email: "admin@example.com",
+        role: "admin",
+      };
+      localStorage.setItem("user", JSON.stringify(userData));
+      setUser(userData);
+      setIsAuthenticated(true);
+      return { success: true };
     }
+    return { success: false };
   };
 
   const logout = () => {
@@ -66,40 +86,28 @@ const AppContent = () => {
     setIsAuthenticated(false);
   };
 
-  // Protected Route Component
   const ProtectedRoute = ({ children }) => {
     if (loading) {
       return (
-        <div className="min-h-screen flex items-center justify-center" style={{ backgroundColor: themeUtils.getBgColor('default') }}>
-          <div 
+        <div
+          className="min-h-screen flex items-center justify-center"
+          style={{ backgroundColor: themeUtils.getBgColor("default") }}
+        >
+          <div
             className="animate-spin rounded-full h-12 w-12 border-b-2"
-            style={{ borderColor: theme.headerBg || '#6366f1' }}
-          ></div>
+            style={{ borderColor: theme.headerBg || "#6366f1" }}
+          />
         </div>
       );
     }
-
     return isAuthenticated ? children : <Navigate to="/login" />;
   };
 
-  // Public Route Component (redirects to dashboard if authenticated)
-  const PublicRoute = ({ children }) => {
-    if (loading) {
-      return (
-        <div className="min-h-screen flex items-center justify-center" style={{ backgroundColor: themeUtils.getBgColor('default') }}>
-          <div 
-            className="animate-spin rounded-full h-12 w-12 border-b-2"
-            style={{ borderColor: theme.headerBg || '#6366f1' }}
-          ></div>
-        </div>
-      );
-    }
-
-    return isAuthenticated ? <Navigate to="/dashboard" /> : children;
-  };
-
   return (
-    <div className="font-sans" style={{ backgroundColor: themeUtils.getBgColor('default') }}>
+    <div
+      className="font-sans"
+      style={{ backgroundColor: themeUtils.getBgColor("default") }}
+    >
       <Routes>
         {/* Public Routes */}
         <Route path="/login" element={<LoginPage onLogin={login} />} />
@@ -113,14 +121,10 @@ const AppContent = () => {
           path="/*"
           element={
             <ProtectedRoute>
-              <div className="flex h-screen overflow-hidden" style={{ backgroundColor: themeUtils.getBgGradient() }}>
-                {sidebarOpen && (
-                  <div
-                    className="fixed inset-0 bg-black bg-opacity-60 backdrop-blur-md z-40 lg:hidden"
-                    onClick={() => setSidebarOpen(false)}
-                  ></div>
-                )}
-
+              <div
+                className="flex h-screen overflow-hidden"
+                style={{ backgroundColor: themeUtils.getBgGradient() }}
+              >
                 <Sidebar
                   isSidebarCollapsed={isSidebarCollapsed}
                   setIsSidebarCollapsed={setIsSidebarCollapsed}
@@ -136,35 +140,34 @@ const AppContent = () => {
                     onLogout={logout}
                   />
 
-                  <main 
+                  <main
                     className="flex-1 overflow-y-auto hide-scrollbar"
-                    style={{ backgroundColor: themeUtils.getBgColor('default') }}
+                    style={{
+                      backgroundColor: themeUtils.getBgColor("default"),
+                    }}
                   >
-                    <div className="p-6">
+                    <div className="p-4">
                       <Routes>
-                        <Route path="/" element={<DashboardOverview />} />
+                        <Route path="/" element={<Dashboard />} />
+                        <Route path="/dashboard" element={<Dashboard />} />
                         <Route
-                          path="/dashboard"
-                          element={<DashboardOverview />}
+                          path="/face-registration"
+                          element={<FaceRegistration />}
                         />
+
                         <Route
-                          path="/dashboard/overview"
-                          element={<DashboardOverview />}
+                          path="/project-management"
+                          element={<ProjectManagement />}
                         />
-                        <Route
-                          path="/dashboard/analytics"
-                          element={<DashboardAnalytics />}
-                        />
-                        <Route
-                          path="/dashboard/reports"
-                          element={<DashboardReports />}
-                        />
-                        <Route path="/page-layouts" element={<PageLayouts />} />
+                        <Route path="/live-attendence" element={<LiveAttendence/>} />
+                        <Route path="/evidence-gallery" element={<EvidenceGallery/>} />
+
                         <Route path="/profile" element={<Profile />} />
                         <Route path="/settings" element={<Setting />} />
                       </Routes>
                     </div>
                   </main>
+
                   <Footer />
                 </div>
               </div>
@@ -172,31 +175,6 @@ const AppContent = () => {
           }
         />
       </Routes>
-
-      {/* --- Custom CSS for Font and Scrollbar --- */}
-      <style jsx global>{`
-        @import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap");
-        body {
-          font-family: "Inter", sans-serif;
-          margin: 0;
-          padding: 0;
-          overflow: hidden;
-        }
-        html,
-        body,
-        #root {
-          height: 100%;
-        }
-        /* Hide scrollbar for Chrome, Safari and Opera */
-        .hide-scrollbar::-webkit-scrollbar {
-          display: none;
-        }
-        /* Hide scrollbar for IE, Edge and Firefox */
-        .hide-scrollbar {
-          -ms-overflow-style: none;  /* IE and Edge */
-          scrollbar-width: none;  /* Firefox */
-        }
-      `}</style>
     </div>
   );
 };
