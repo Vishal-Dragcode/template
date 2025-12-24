@@ -21,6 +21,7 @@ import Profile from "./ui/Profile/Profile";
 import Footer from "./layout/Footer";
 import Setting from "./ui/Settings/Settings";
 import EvidenceGallery from "./components/evidence-gallery/EvidenceGallery";
+import AttendanceGallery from "./components/attendance-gallery/AttendanceGallery";
 
 // Create a CSS string for the hide-scrollbar class
 const scrollbarStyles = `
@@ -160,6 +161,7 @@ const AppContent = () => {
                           element={<ProjectManagement />}
                         />
                         <Route path="/live-attendence" element={<LiveAttendence/>} />
+                        <Route path="/attendance-gallery" element={<AttendanceGallery/>} />
                         <Route path="/evidence-gallery" element={<EvidenceGallery/>} />
 
                         <Route path="/profile" element={<Profile />} />

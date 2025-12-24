@@ -72,6 +72,11 @@ const Sidebar = ({
       path: "/live-attendence",
     },
     {
+      label: "Attendance Gallery",
+      icon: Package,
+      path: "/attendance-gallery",
+    },
+    {
       label: "Evidence Gallery",
       icon: Package,
       path: "/evidence-gallery",

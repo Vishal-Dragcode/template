@@ -1,16 +1,16 @@
-import React, { useState } from 'react';
-import { Edit2, Trash2, Play, X, Plus, Search, Download } from 'lucide-react';
+import React, { useState, useRef, useEffect } from 'react';
+import { Edit2, Trash2, Play, X, Plus, Search, Download, Upload, Video as VideoIcon } from 'lucide-react';
 import { useTheme } from "../../ui/Settings/themeUtils";
 
 const LabourManagement = () => {
   const [labourData, setLabourData] = useState([
-    { id: 1, name: 'Pooja J', code: 'RJ009', emiratesId: '5464564', video: 'https://www.w3schools.com/html/mov_bbb.mp4' },
-    { id: 2, name: 'Niraj J', code: 'LAB001', emiratesId: '874120545645', video: 'https://www.w3schools.com/html/mov_bbb.mp4' },
-    { id: 3, name: 'Pooja J', code: 'RJ06', emiratesId: '874120545645', video: 'https://www.w3schools.com/html/mov_bbb.mp4' },
-    { id: 4, name: 'Amit P', code: 'RJ01', emiratesId: '423434224', video: 'https://www.w3schools.com/html/mov_bbb.mp4' },
-    { id: 5, name: 'Shubham B', code: 'RJ03', emiratesId: '1234-5678-9012', video: 'https://www.w3schools.com/html/mov_bbb.mp4' },
-    { id: 6, name: 'Sahil G', code: 'RJ04', emiratesId: '7025984188', video: 'https://www.w3schools.com/html/mov_bbb.mp4' },
-    { id: 7, name: 'Sangram G', code: 'RJ02', emiratesId: '784125690', video: 'https://www.w3schools.com/html/mov_bbb.mp4' },
+    { id: 1, name: 'Pooja J', code: 'RJ009', emiratesId: '5464564', category: 'Carpenter', video: 'https://www.w3schools.com/html/mov_bbb.mp4', videoBlob: null },
+    { id: 2, name: 'Niraj J', code: 'LAB001', emiratesId: '874120545645', category: 'Electrician', video: 'https://www.w3schools.com/html/mov_bbb.mp4', videoBlob: null },
+    { id: 3, name: 'Pooja J', code: 'RJ06', emiratesId: '874120545645', category: 'Plumber', video: 'https://www.w3schools.com/html/mov_bbb.mp4', videoBlob: null },
+    { id: 4, name: 'Amit P', code: 'RJ01', emiratesId: '423434224', category: 'Mason', video: 'https://www.w3schools.com/html/mov_bbb.mp4', videoBlob: null },
+    { id: 5, name: 'Shubham B', code: 'RJ03', emiratesId: '1234-5678-9012', category: 'Helper', video: 'https://www.w3schools.com/html/mov_bbb.mp4', videoBlob: null },
+    { id: 6, name: 'Sahil G', code: 'RJ04', emiratesId: '7025984188', category: 'Supervisor', video: 'https://www.w3schools.com/html/mov_bbb.mp4', videoBlob: null },
+    { id: 7, name: 'Sangram G', code: 'RJ02', emiratesId: '784125690', category: 'Carpenter', video: 'https://www.w3schools.com/html/mov_bbb.mp4', videoBlob: null },
   ]);
 
   const [recordsPerPage, setRecordsPerPage] = useState(10);
@@ -21,14 +21,23 @@ const LabourManagement = () => {
   const [showVideoModal, setShowVideoModal] = useState(false);
   const [currentVideo, setCurrentVideo] = useState('');
   const [formData, setFormData] = useState({
-    name: '',
+    firstName: '',
+    lastName: '',
     code: '',
     emiratesId: '',
-    video: ''
+    category: '',
+    videoBlob: null,
+    videoURL: ''
   });
 
-  // Get theme and theme utilities (removed ThemeToggleButton)
+  const [dragActive, setDragActive] = useState(false);
+  const videoInputRef = useRef(null);
+  const videoPreviewRef = useRef(null);
+
+  // Get theme and theme utilities
   const { theme, themeUtils } = useTheme();
+
+  const categories = ['Carpenter', 'Electrician', 'Plumber', 'Mason', 'Helper', 'Supervisor', 'Other'];
 
   const filteredData = labourData.filter(labour =>
     labour.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -36,20 +45,63 @@ const LabourManagement = () => {
     labour.emiratesId.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
+  const handleDrag = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (e.type === "dragenter" || e.type === "dragover") {
+      setDragActive(true);
+    } else if (e.type === "dragleave") {
+      setDragActive(false);
+    }
+  };
+
+  const handleDrop = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setDragActive(false);
+    
+    if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+      handleVideoFile(e.dataTransfer.files[0]);
+    }
+  };
+
+  const handleVideoFile = (file) => {
+    if (file && file.type.startsWith('video/')) {
+      const url = URL.createObjectURL(file);
+      setFormData({
+        ...formData,
+        videoBlob: file,
+        videoURL: url
+      });
+    } else {
+      alert('Please select a valid video file');
+    }
+  };
+
+  const handleVideoInputChange = (e) => {
+    if (e.target.files && e.target.files[0]) {
+      handleVideoFile(e.target.files[0]);
+    }
+  };
+
   const handleAdd = () => {
     setModalType('add');
-    setFormData({ name: '', code: '', emiratesId: '', video: '' });
+    setFormData({ firstName: '', lastName: '', code: '', emiratesId: '', category: '', videoBlob: null, videoURL: '' });
     setShowModal(true);
   };
 
   const handleEdit = (labour) => {
     setModalType('edit');
     setCurrentLabour(labour);
+    const nameParts = labour.name.split(' ');
     setFormData({
-      name: labour.name,
+      firstName: nameParts[0] || '',
+      lastName: nameParts.slice(1).join(' ') || '',
       code: labour.code,
       emiratesId: labour.emiratesId,
-      video: labour.video
+      category: labour.category || '',
+      videoBlob: labour.videoBlob,
+      videoURL: labour.video
     });
     setShowModal(true);
   };
@@ -61,24 +113,44 @@ const LabourManagement = () => {
   };
 
   const handleSubmit = () => {
-    if (!formData.name || !formData.code || !formData.emiratesId || !formData.video) {
-      alert('Please fill all fields');
+    if (!formData.firstName || !formData.lastName || !formData.code || !formData.category) {
+      alert('Please fill all required fields (First Name, Last Name, Labour Code, Category)');
       return;
     }
 
+    if (!formData.videoURL && !formData.videoBlob) {
+      alert('Please upload a video');
+      return;
+    }
+
+    const fullName = `${formData.firstName} ${formData.lastName}`;
+
     if (modalType === 'add') {
       const newLabour = {
-        id: Math.max(...labourData.map(l => l.id)) + 1,
-        ...formData
+        id: labourData.length > 0 ? Math.max(...labourData.map(l => l.id)) + 1 : 1,
+        name: fullName,
+        code: formData.code,
+        emiratesId: formData.emiratesId,
+        category: formData.category,
+        video: formData.videoURL,
+        videoBlob: formData.videoBlob
       };
       setLabourData([...labourData, newLabour]);
     } else {
       setLabourData(labourData.map(labour =>
-        labour.id === currentLabour.id ? { ...labour, ...formData } : labour
+        labour.id === currentLabour.id ? { 
+          ...labour, 
+          name: fullName,
+          code: formData.code,
+          emiratesId: formData.emiratesId,
+          category: formData.category,
+          video: formData.videoURL,
+          videoBlob: formData.videoBlob
+        } : labour
       ));
     }
     setShowModal(false);
-    setFormData({ name: '', code: '', emiratesId: '', video: '' });
+    setFormData({ firstName: '', lastName: '', code: '', emiratesId: '', category: '', videoBlob: null, videoURL: '' });
   };
 
   const handlePlayVideo = (videoUrl) => {
@@ -87,12 +159,13 @@ const LabourManagement = () => {
   };
 
   const exportToCSV = () => {
-    const headers = ['Sr. No', 'Name', 'Labour Code', 'Emirates ID'];
+    const headers = ['Sr. No', 'Name', 'Labour Code', 'Emirates ID', 'Category'];
     const csvData = labourData.map((labour, index) => [
       index + 1,
       labour.name,
       labour.code,
-      labour.emiratesId
+      labour.emiratesId,
+      labour.category || 'N/A'
     ]);
     
     const csvContent = [
@@ -106,7 +179,23 @@ const LabourManagement = () => {
     a.href = url;
     a.download = 'labour_list.csv';
     a.click();
+    window.URL.revokeObjectURL(url);
   };
+
+  const closeModal = () => {
+    setShowModal(false);
+    if (formData.videoURL && !labourData.find(l => l.video === formData.videoURL)) {
+      URL.revokeObjectURL(formData.videoURL);
+    }
+  };
+
+  useEffect(() => {
+    return () => {
+      if (formData.videoURL && !labourData.find(l => l.video === formData.videoURL)) {
+        URL.revokeObjectURL(formData.videoURL);
+      }
+    };
+  }, []);
 
   // Create dynamic gradient style for headers based on theme
   const headerGradientStyle = {
@@ -124,20 +213,6 @@ const LabourManagement = () => {
       return {
         background: `linear-gradient(to right, #10b981, #059669)`,
         color: '#ffffff'
-      };
-    }
-    return {};
-  };
-
-  // Get hover styles for buttons
-  const getButtonHoverStyle = (type) => {
-    if (type === 'primary') {
-      return {
-        background: `linear-gradient(to right, ${theme.headerBg || '#2563eb'}, ${theme.headerBg || '#1d4ed8'})`
-      };
-    } else if (type === 'success') {
-      return {
-        background: `linear-gradient(to right, #059669, #047857)`
       };
     }
     return {};
@@ -206,8 +281,6 @@ const LabourManagement = () => {
                 <Download size={16} />
                 Export
               </button>
-              
-              {/* Theme Toggle Button Removed */}
             </div>
           </div>
         </div>
@@ -222,6 +295,7 @@ const LabourManagement = () => {
                   <th className="px-3 py-2.5 text-left text-xs font-semibold">Name</th>
                   <th className="px-3 py-2.5 text-left text-xs font-semibold">Code</th>
                   <th className="px-3 py-2.5 text-left text-xs font-semibold">Emirates ID</th>
+                  <th className="px-3 py-2.5 text-left text-xs font-semibold">Category</th>
                   <th className="px-3 py-2.5 text-left text-xs font-semibold">Video</th>
                   <th className="px-3 py-2.5 text-center text-xs font-semibold">Action</th>
                 </tr>
@@ -231,21 +305,18 @@ const LabourManagement = () => {
                   <tr 
                     key={labour.id} 
                     className="transition-colors hover:bg-opacity-10"
-                    style={{ 
-                      ':hover': { backgroundColor: theme.headerBg }
-                    }}
                   >
                     <td className="px-3 py-2 text-sm font-medium" style={{ color: themeUtils.getTextColor() }}>{index + 1}</td>
                     <td className="px-3 py-2 text-sm font-medium" style={{ color: themeUtils.getTextColor() }}>{labour.name}</td>
                     <td className="px-3 py-2 text-sm" style={{ color: themeUtils.getTextColor(false) }}>{labour.code}</td>
-                    <td className="px-3 py-2 text-sm" style={{ color: themeUtils.getTextColor(false) }}>{labour.emiratesId}</td>
+                    <td className="px-3 py-2 text-sm" style={{ color: themeUtils.getTextColor(false) }}>{labour.emiratesId || 'N/A'}</td>
+                    <td className="px-3 py-2 text-sm" style={{ color: themeUtils.getTextColor(false) }}>{labour.category || 'N/A'}</td>
                     <td className="px-3 py-2">
                       <button
                         onClick={() => handlePlayVideo(labour.video)}
                         className="text-sm font-medium flex items-center gap-1 transition-colors"
                         style={{ 
-                          color: theme.headerBg || '#3b82f6',
-                          ':hover': { color: theme.headerBg ? theme.headerBg + 'dd' : '#2563eb' }
+                          color: theme.headerBg || '#3b82f6'
                         }}
                       >
                         <Play size={14} />
@@ -259,8 +330,7 @@ const LabourManagement = () => {
                           className="p-1.5 rounded-lg transition-colors"
                           title="Edit"
                           style={{ 
-                            color: theme.headerBg || '#3b82f6',
-                            ':hover': { backgroundColor: (theme.headerBg || '#3b82f6') + '20' }
+                            color: theme.headerBg || '#3b82f6'
                           }}
                         >
                           <Edit2 size={16} />
@@ -270,8 +340,7 @@ const LabourManagement = () => {
                           className="p-1.5 rounded-lg transition-colors"
                           title="Delete"
                           style={{ 
-                            color: '#ef4444',
-                            ':hover': { backgroundColor: '#ef444420' }
+                            color: '#ef4444'
                           }}
                         >
                           <Trash2 size={16} />
@@ -287,98 +356,217 @@ const LabourManagement = () => {
 
         {/* Add/Edit Modal */}
         {showModal && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-            <div className="rounded-xl shadow-2xl max-w-md w-full" style={{ backgroundColor: themeUtils.getBgColor("card") }}>
-              <div style={headerGradientStyle} className="text-white p-4 flex justify-between items-center rounded-t-xl">
+          <div className="fixed inset-0  bg-opacity-50 backdrop-blur-lg flex items-center justify-center p-4 z-50 overflow-y-auto ">
+            <div className="rounded-xl shadow-2xl w-full max-w-5xl my-4" style={{ backgroundColor: themeUtils.getBgColor("card") }}>
+              <div style={headerGradientStyle} className="text-white p-3 flex justify-between items-center">
                 <h2 className="text-lg font-bold">
-                  {modalType === 'add' ? 'Add New Labour' : 'Edit Labour'}
+                  {modalType === 'add' ? 'Face Enrollment' : 'Edit Labour'}
                 </h2>
                 <button
-                  onClick={() => setShowModal(false)}
+                  onClick={closeModal}
                   className="text-white hover:bg-white hover:bg-opacity-20 rounded-lg p-1.5 transition-colors"
                 >
                   <X size={20} />
                 </button>
               </div>
-              <div className="p-5 space-y-3">
-                <div>
-                  <label className="block text-sm font-medium mb-1.5" style={{ color: themeUtils.getTextColor() }}>Name</label>
-                  <input
-                    type="text"
-                    value={formData.name}
-                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                    className="w-full px-3 py-2 text-sm border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
-                    placeholder="Enter name"
-                    style={{ 
-                      borderColor: themeUtils.getBorderColor(),
-                      backgroundColor: themeUtils.getBgColor("input"),
-                      color: themeUtils.getTextColor()
-                    }}
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium mb-1.5" style={{ color: themeUtils.getTextColor() }}>Labour Code</label>
-                  <input
-                    type="text"
-                    value={formData.code}
-                    onChange={(e) => setFormData({ ...formData, code: e.target.value })}
-                    className="w-full px-3 py-2 text-sm border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
-                    placeholder="Enter labour code"
-                    style={{ 
-                      borderColor: themeUtils.getBorderColor(),
-                      backgroundColor: themeUtils.getBgColor("input"),
-                      color: themeUtils.getTextColor()
-                    }}
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium mb-1.5" style={{ color: themeUtils.getTextColor() }}>Emirates ID</label>
-                  <input
-                    type="text"
-                    value={formData.emiratesId}
-                    onChange={(e) => setFormData({ ...formData, emiratesId: e.target.value })}
-                    className="w-full px-3 py-2 text-sm border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
-                    placeholder="Enter Emirates ID"
-                    style={{ 
-                      borderColor: themeUtils.getBorderColor(),
-                      backgroundColor: themeUtils.getBgColor("input"),
-                      color: themeUtils.getTextColor()
-                    }}
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium mb-1.5" style={{ color: themeUtils.getTextColor() }}>Video URL</label>
-                  <input
-                    type="url"
-                    value={formData.video}
-                    onChange={(e) => setFormData({ ...formData, video: e.target.value })}
-                    className="w-full px-3 py-2 text-sm border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
-                    placeholder="https://example.com/video.mp4"
-                    style={{ 
-                      borderColor: themeUtils.getBorderColor(),
-                      backgroundColor: themeUtils.getBgColor("input"),
-                      color: themeUtils.getTextColor()
-                    }}
-                  />
-                </div>
-                <div className="flex gap-2 pt-3">
-                  <button
-                    onClick={handleSubmit}
-                    className="flex-1 py-2 text-sm rounded-lg transition-all shadow-md font-medium"
-                    style={getButtonStyle('primary')}
-                  >
-                    {modalType === 'add' ? 'Add Labour' : 'Update'}
-                  </button>
-                  <button
-                    onClick={() => setShowModal(false)}
-                    className="flex-1 py-2 text-sm rounded-lg transition-colors font-medium"
-                    style={{ 
-                      backgroundColor: themeUtils.getBgColor("hover"),
-                      color: themeUtils.getTextColor()
-                    }}
-                  >
-                    Cancel
-                  </button>
+              
+              <div className="p-4">
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                  {/* Left Side - Video Upload */}
+                  <div className="space-y-3">
+                    <div 
+                      className={`border-3 border-dashed rounded-lg p-4 transition-all ${
+                        dragActive ? 'border-blue-500 bg-blue-50' : ''
+                      }`}
+                      style={{ 
+                        borderWidth: '3px',
+                        borderColor: dragActive ? theme.headerBg || '#3b82f6' : themeUtils.getBorderColor(),
+                        backgroundColor: dragActive ? (theme.headerBg || '#3b82f6') + '10' : '#3a3a3a',
+                        minHeight: '380px',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        justifyContent: 'center',
+                        alignItems: 'center'
+                      }}
+                      onDragEnter={handleDrag}
+                      onDragLeave={handleDrag}
+                      onDragOver={handleDrag}
+                      onDrop={handleDrop}
+                    >
+                      {!formData.videoURL ? (
+                        <div className="text-center">
+                          <div className="mb-4 flex justify-center">
+                            <div className="p-4 rounded-xl bg-gray-600">
+                              <VideoIcon className="text-gray-400" size={48} />
+                            </div>
+                          </div>
+                          <h3 className="text-lg font-semibold mb-2 text-gray-400">
+                            Drag & Drop Video
+                          </h3>
+                          <p className="text-gray-500 mb-4 text-sm">
+                            or click to select
+                          </p>
+                          <input
+                            ref={videoInputRef}
+                            type="file"
+                            accept="video/*"
+                            onChange={handleVideoInputChange}
+                            className="hidden"
+                          />
+                          <button
+                            onClick={() => videoInputRef.current?.click()}
+                            className="px-4 py-2 rounded-lg transition-all shadow-md text-sm font-medium"
+                            style={getButtonStyle('primary')}
+                          >
+                            <Upload className="inline mr-1.5" size={16} />
+                            Select Video
+                          </button>
+                        </div>
+                      ) : (
+                        <div className="w-full">
+                          <video
+                            ref={videoPreviewRef}
+                            controls
+                            src={formData.videoURL}
+                            className="w-full rounded-lg shadow-lg"
+                            style={{ maxHeight: '340px' }}
+                          />
+                          <button
+                            onClick={() => {
+                              if (formData.videoURL) {
+                                URL.revokeObjectURL(formData.videoURL);
+                              }
+                              setFormData({ ...formData, videoURL: '', videoBlob: null });
+                            }}
+                            className="mt-3 w-full px-3 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-all shadow-md text-sm font-medium"
+                          >
+                            Remove Video
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Right Side - Labour Registration Form */}
+                  <div className="space-y-3">
+                    <h3 className="text-lg font-bold mb-3" style={{ color: themeUtils.getTextColor() }}>
+                      Labour Registration
+                    </h3>
+                    
+                    <div>
+                      <label className="block text-sm font-medium mb-1.5" style={{ color: themeUtils.getTextColor() }}>
+                        Labour Code <span className="text-red-500">*</span>
+                      </label>
+                      <input
+                        type="text"
+                        value={formData.code}
+                        onChange={(e) => setFormData({ ...formData, code: e.target.value })}
+                        className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none text-sm"
+                        placeholder="Enter labour code"
+                        style={{ 
+                          borderColor: themeUtils.getBorderColor(),
+                          backgroundColor: themeUtils.getBgColor("input"),
+                          color: themeUtils.getTextColor()
+                        }}
+                      />
+                    </div>
+                    
+                    <div>
+                      <label className="block text-sm font-medium mb-1.5" style={{ color: themeUtils.getTextColor() }}>
+                        First Name <span className="text-red-500">*</span>
+                      </label>
+                      <input
+                        type="text"
+                        value={formData.firstName}
+                        onChange={(e) => setFormData({ ...formData, firstName: e.target.value })}
+                        className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none text-sm"
+                        placeholder="Enter first name"
+                        style={{ 
+                          borderColor: themeUtils.getBorderColor(),
+                          backgroundColor: themeUtils.getBgColor("input"),
+                          color: themeUtils.getTextColor()
+                        }}
+                      />
+                    </div>
+                    
+                    <div>
+                      <label className="block text-sm font-medium mb-1.5" style={{ color: themeUtils.getTextColor() }}>
+                        Last Name <span className="text-red-500">*</span>
+                      </label>
+                      <input
+                        type="text"
+                        value={formData.lastName}
+                        onChange={(e) => setFormData({ ...formData, lastName: e.target.value })}
+                        className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none text-sm"
+                        placeholder="Enter last name"
+                        style={{ 
+                          borderColor: themeUtils.getBorderColor(),
+                          backgroundColor: themeUtils.getBgColor("input"),
+                          color: themeUtils.getTextColor()
+                        }}
+                      />
+                    </div>
+                    
+                    <div>
+                      <label className="block text-sm font-medium mb-1.5" style={{ color: themeUtils.getTextColor() }}>
+                        Emirates ID
+                      </label>
+                      <input
+                        type="text"
+                        value={formData.emiratesId}
+                        onChange={(e) => setFormData({ ...formData, emiratesId: e.target.value })}
+                        className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none text-sm"
+                        placeholder="Optional"
+                        style={{ 
+                          borderColor: themeUtils.getBorderColor(),
+                          backgroundColor: themeUtils.getBgColor("input"),
+                          color: themeUtils.getTextColor()
+                        }}
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium mb-1.5" style={{ color: themeUtils.getTextColor() }}>
+                        Category <span className="text-red-500">*</span>
+                      </label>
+                      <select
+                        value={formData.category}
+                        onChange={(e) => setFormData({ ...formData, category: e.target.value })}
+                        className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none text-sm"
+                        style={{ 
+                          borderColor: themeUtils.getBorderColor(),
+                          backgroundColor: themeUtils.getBgColor("input"),
+                          color: themeUtils.getTextColor()
+                        }}
+                      >
+                        <option value="">-- Select Category --</option>
+                        {categories.map(cat => (
+                          <option key={cat} value={cat}>{cat}</option>
+                        ))}
+                      </select>
+                    </div>
+
+                    <div className="pt-3 flex gap-2">
+                      <button
+                        onClick={handleSubmit}
+                        className="flex-1 py-2.5 rounded-lg transition-all shadow-md font-semibold text-base uppercase tracking-wide"
+                        style={getButtonStyle('primary')}
+                      >
+                        REGISTER
+                      </button>
+                      <button
+                        onClick={closeModal}
+                        className="px-6 py-2.5 rounded-lg transition-colors font-semibold text-base"
+                        style={{ 
+                          backgroundColor: themeUtils.getBgColor("hover"),
+                          color: themeUtils.getTextColor(),
+                          border: `1px solid ${themeUtils.getBorderColor()}`
+                        }}
+                      >
+                        Close
+                      </button>
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
@@ -387,23 +575,24 @@ const LabourManagement = () => {
 
         {/* Video Modal */}
         {showVideoModal && (
-          <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center p-4 z-50">
-            <div className="rounded-xl shadow-2xl max-w-4xl w-full" style={{ backgroundColor: themeUtils.getBgColor("card") }}>
-              <div style={headerGradientStyle} className="text-white p-3 flex justify-between items-center rounded-t-xl">
-                <h2 className="text-lg font-bold">Labour Registration Video</h2>
+          <div className="fixed inset-0  bg-opacity-50 backdrop-blur-lg flex items-center justify-center p-4 z-50 overflow-y-auto">
+            <div className="rounded-xl shadow-2xl max-w-5xl w-full" style={{ backgroundColor: themeUtils.getBgColor("card") }}>
+              <div style={headerGradientStyle} className="text-white p-4 flex justify-between items-center rounded-t-xl">
+                <h2 className="text-xl font-bold">Labour Registration Video</h2>
                 <button
                   onClick={() => setShowVideoModal(false)}
-                  className="text-white hover:bg-white hover:bg-opacity-20 rounded-lg p-1.5 transition-colors"
+                  className="text-white hover:bg-white hover:bg-opacity-20 rounded-lg p-2 transition-colors"
                 >
-                  <X size={20} />
+                  <X size={24} />
                 </button>
               </div>
-              <div className="p-3">
+              <div className="p-4">
                 <video
                   controls
                   autoPlay
                   className="w-full rounded-lg"
                   src={currentVideo}
+                  style={{ maxHeight: '70vh' }}
                 >
                   Your browser does not support the video tag.
                 </video>
