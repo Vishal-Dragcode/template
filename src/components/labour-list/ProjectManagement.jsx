@@ -1,20 +1,22 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Edit2, Trash2, Play, X, Plus, Search, Download, Upload, Video as VideoIcon } from 'lucide-react';
+import { Edit2, Trash2, Play, X, Plus, Search, Download, Upload, Video as VideoIcon, Calendar } from 'lucide-react';
 import { useTheme } from "../../ui/Settings/themeUtils";
 
 const LabourManagement = () => {
   const [labourData, setLabourData] = useState([
-    { id: 1, name: 'Pooja J', code: 'RJ009', emiratesId: '5464564', category: 'Carpenter', video: 'https://www.w3schools.com/html/mov_bbb.mp4', videoBlob: null },
-    { id: 2, name: 'Niraj J', code: 'LAB001', emiratesId: '874120545645', category: 'Electrician', video: 'https://www.w3schools.com/html/mov_bbb.mp4', videoBlob: null },
-    { id: 3, name: 'Pooja J', code: 'RJ06', emiratesId: '874120545645', category: 'Plumber', video: 'https://www.w3schools.com/html/mov_bbb.mp4', videoBlob: null },
-    { id: 4, name: 'Amit P', code: 'RJ01', emiratesId: '423434224', category: 'Mason', video: 'https://www.w3schools.com/html/mov_bbb.mp4', videoBlob: null },
-    { id: 5, name: 'Shubham B', code: 'RJ03', emiratesId: '1234-5678-9012', category: 'Helper', video: 'https://www.w3schools.com/html/mov_bbb.mp4', videoBlob: null },
-    { id: 6, name: 'Sahil G', code: 'RJ04', emiratesId: '7025984188', category: 'Supervisor', video: 'https://www.w3schools.com/html/mov_bbb.mp4', videoBlob: null },
-    { id: 7, name: 'Sangram G', code: 'RJ02', emiratesId: '784125690', category: 'Carpenter', video: 'https://www.w3schools.com/html/mov_bbb.mp4', videoBlob: null },
+    { id: 1, name: 'Pooja J', code: 'RJ009', department: 'Construction', designation: 'Carpenter', joiningDate: '2023-01-15', video: 'https://www.w3schools.com/html/mov_bbb.mp4', videoBlob: null },
+    { id: 2, name: 'Niraj J', code: 'LAB001', department: 'Electrical', designation: 'Electrician', joiningDate: '2023-02-20', video: 'https://www.w3schools.com/html/mov_bbb.mp4', videoBlob: null },
+    { id: 3, name: 'Pooja J', code: 'RJ06', department: 'Plumbing', designation: 'Plumber', joiningDate: '2023-03-10', video: 'https://www.w3schools.com/html/mov_bbb.mp4', videoBlob: null },
+    { id: 4, name: 'Amit P', code: 'RJ01', department: 'Construction', designation: 'Mason', joiningDate: '2023-04-05', video: 'https://www.w3schools.com/html/mov_bbb.mp4', videoBlob: null },
+    { id: 5, name: 'Shubham B', code: 'RJ03', department: 'General', designation: 'Helper', joiningDate: '2023-05-12', video: 'https://www.w3schools.com/html/mov_bbb.mp4', videoBlob: null },
+    { id: 6, name: 'Sahil G', code: 'RJ04', department: 'Management', designation: 'Supervisor', joiningDate: '2023-06-18', video: 'https://www.w3schools.com/html/mov_bbb.mp4', videoBlob: null },
+    { id: 7, name: 'Sangram G', code: 'RJ02', department: 'Construction', designation: 'Carpenter', joiningDate: '2023-07-22', video: 'https://www.w3schools.com/html/mov_bbb.mp4', videoBlob: null },
   ]);
 
   const [recordsPerPage, setRecordsPerPage] = useState(10);
   const [searchTerm, setSearchTerm] = useState('');
+  const [fromDateFilter, setFromDateFilter] = useState('');
+  const [toDateFilter, setToDateFilter] = useState('');
   const [showModal, setShowModal] = useState(false);
   const [modalType, setModalType] = useState('add');
   const [currentLabour, setCurrentLabour] = useState(null);
@@ -24,8 +26,9 @@ const LabourManagement = () => {
     firstName: '',
     lastName: '',
     code: '',
-    emiratesId: '',
-    category: '',
+    department: '',
+    designation: '',
+    joiningDate: '',
     videoBlob: null,
     videoURL: ''
   });
@@ -37,13 +40,33 @@ const LabourManagement = () => {
   // Get theme and theme utilities
   const { theme, themeUtils } = useTheme();
 
-  const categories = ['Carpenter', 'Electrician', 'Plumber', 'Mason', 'Helper', 'Supervisor', 'Other'];
+  const departments = ['Construction', 'Electrical', 'Plumbing', 'Management', 'General', 'Other'];
+  const designations = ['Carpenter', 'Electrician', 'Plumber', 'Mason', 'Helper', 'Supervisor', 'Engineer', 'Other'];
 
-  const filteredData = labourData.filter(labour =>
-    labour.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    labour.code.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    labour.emiratesId.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const filteredData = labourData.filter(labour => {
+    const matchesSearch = labour.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         labour.code.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         labour.department.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         labour.designation.toLowerCase().includes(searchTerm.toLowerCase());
+    
+    let matchesDate = true;
+    if (fromDateFilter && toDateFilter) {
+      const labourDate = new Date(labour.joiningDate);
+      const fromDate = new Date(fromDateFilter);
+      const toDate = new Date(toDateFilter);
+      matchesDate = labourDate >= fromDate && labourDate <= toDate;
+    } else if (fromDateFilter) {
+      const labourDate = new Date(labour.joiningDate);
+      const fromDate = new Date(fromDateFilter);
+      matchesDate = labourDate >= fromDate;
+    } else if (toDateFilter) {
+      const labourDate = new Date(labour.joiningDate);
+      const toDate = new Date(toDateFilter);
+      matchesDate = labourDate <= toDate;
+    }
+    
+    return matchesSearch && matchesDate;
+  });
 
   const handleDrag = (e) => {
     e.preventDefault();
@@ -86,7 +109,16 @@ const LabourManagement = () => {
 
   const handleAdd = () => {
     setModalType('add');
-    setFormData({ firstName: '', lastName: '', code: '', emiratesId: '', category: '', videoBlob: null, videoURL: '' });
+    setFormData({ 
+      firstName: '', 
+      lastName: '', 
+      code: '', 
+      department: '', 
+      designation: '', 
+      joiningDate: '',
+      videoBlob: null, 
+      videoURL: '' 
+    });
     setShowModal(true);
   };
 
@@ -98,8 +130,9 @@ const LabourManagement = () => {
       firstName: nameParts[0] || '',
       lastName: nameParts.slice(1).join(' ') || '',
       code: labour.code,
-      emiratesId: labour.emiratesId,
-      category: labour.category || '',
+      department: labour.department || '',
+      designation: labour.designation || '',
+      joiningDate: labour.joiningDate || '',
       videoBlob: labour.videoBlob,
       videoURL: labour.video
     });
@@ -113,8 +146,8 @@ const LabourManagement = () => {
   };
 
   const handleSubmit = () => {
-    if (!formData.firstName || !formData.lastName || !formData.code || !formData.category) {
-      alert('Please fill all required fields (First Name, Last Name, Labour Code, Category)');
+    if (!formData.firstName || !formData.lastName || !formData.code || !formData.department || !formData.designation || !formData.joiningDate) {
+      alert('Please fill all required fields (First Name, Last Name, Labour Code, Department, Designation, Joining Date)');
       return;
     }
 
@@ -130,8 +163,9 @@ const LabourManagement = () => {
         id: labourData.length > 0 ? Math.max(...labourData.map(l => l.id)) + 1 : 1,
         name: fullName,
         code: formData.code,
-        emiratesId: formData.emiratesId,
-        category: formData.category,
+        department: formData.department,
+        designation: formData.designation,
+        joiningDate: formData.joiningDate,
         video: formData.videoURL,
         videoBlob: formData.videoBlob
       };
@@ -142,15 +176,25 @@ const LabourManagement = () => {
           ...labour, 
           name: fullName,
           code: formData.code,
-          emiratesId: formData.emiratesId,
-          category: formData.category,
+          department: formData.department,
+          designation: formData.designation,
+          joiningDate: formData.joiningDate,
           video: formData.videoURL,
           videoBlob: formData.videoBlob
         } : labour
       ));
     }
     setShowModal(false);
-    setFormData({ firstName: '', lastName: '', code: '', emiratesId: '', category: '', videoBlob: null, videoURL: '' });
+    setFormData({ 
+      firstName: '', 
+      lastName: '', 
+      code: '', 
+      department: '', 
+      designation: '', 
+      joiningDate: '',
+      videoBlob: null, 
+      videoURL: '' 
+    });
   };
 
   const handlePlayVideo = (videoUrl) => {
@@ -159,13 +203,14 @@ const LabourManagement = () => {
   };
 
   const exportToCSV = () => {
-    const headers = ['Sr. No', 'Name', 'Labour Code', 'Emirates ID', 'Category'];
+    const headers = ['Sr. No', 'Name', 'Labour Code', 'Department', 'Designation', 'Joining Date'];
     const csvData = labourData.map((labour, index) => [
       index + 1,
       labour.name,
       labour.code,
-      labour.emiratesId,
-      labour.category || 'N/A'
+      labour.department || 'N/A',
+      labour.designation || 'N/A',
+      labour.joiningDate || 'N/A'
     ]);
     
     const csvContent = [
@@ -180,6 +225,11 @@ const LabourManagement = () => {
     a.download = 'labour_list.csv';
     a.click();
     window.URL.revokeObjectURL(url);
+  };
+
+  const clearDateFilters = () => {
+    setFromDateFilter('');
+    setToDateFilter('');
   };
 
   const closeModal = () => {
@@ -218,6 +268,13 @@ const LabourManagement = () => {
     return {};
   };
 
+  // Format date for display
+  const formatDate = (dateString) => {
+    if (!dateString) return 'N/A';
+    const date = new Date(dateString);
+    return date.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
+  };
+
   return (
     <div className="min-h-screen" style={{ backgroundColor: themeUtils.getBgColor("default") }}>
       <div className="max-w-7xl mx-auto">
@@ -225,7 +282,7 @@ const LabourManagement = () => {
         <div className="rounded-xl shadow-lg p-4 mb-4" style={{ backgroundColor: themeUtils.getBgColor("card") }}>
           <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-3">
             <h1 className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
-              Registered Labour List
+               Labour List
             </h1>
             
             <div className="flex flex-wrap items-center gap-3 w-full lg:w-auto">
@@ -245,6 +302,7 @@ const LabourManagement = () => {
                   <option value={25}>25</option>
                   <option value={50}>50</option>
                   <option value={100}>100</option>
+                  <option value={200}>200</option>
                 </select>
               </div>
               
@@ -262,6 +320,53 @@ const LabourManagement = () => {
                     color: themeUtils.getTextColor()
                   }}
                 />
+              </div>
+              
+              {/* Date Range Filter */}
+              <div className="flex items-center gap-2">
+                <div className="relative">
+                  <Calendar className="absolute left-3 top-1/2 transform -translate-y-1/2" size={16} style={{ color: themeUtils.getTextColor(false) }} />
+                  <input
+                    type="date"
+                    placeholder="From date"
+                    value={fromDateFilter}
+                    onChange={(e) => setFromDateFilter(e.target.value)}
+                    className="pl-9 pr-3 py-1.5 text-sm border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
+                    style={{ 
+                      borderColor: themeUtils.getBorderColor(),
+                      backgroundColor: themeUtils.getBgColor("input"),
+                      color: themeUtils.getTextColor(),
+                      width: '150px'
+                    }}
+                  />
+                </div>
+                <span style={{ color: themeUtils.getTextColor(false) }}>to</span>
+                <div className="relative">
+                  <Calendar className="absolute left-3 top-1/2 transform -translate-y-1/2" size={16} style={{ color: themeUtils.getTextColor(false) }} />
+                  <input
+                    type="date"
+                    placeholder="To date"
+                    value={toDateFilter}
+                    onChange={(e) => setToDateFilter(e.target.value)}
+                    className="pl-9 pr-3 py-1.5 text-sm border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
+                    style={{ 
+                      borderColor: themeUtils.getBorderColor(),
+                      backgroundColor: themeUtils.getBgColor("input"),
+                      color: themeUtils.getTextColor(),
+                      width: '150px'
+                    }}
+                  />
+                </div>
+                {(fromDateFilter || toDateFilter) && (
+                  <button
+                    onClick={clearDateFilters}
+                    className="p-1.5 rounded-lg transition-colors"
+                    style={{ color: themeUtils.getTextColor(false) }}
+                    title="Clear date filters"
+                  >
+                    <X size={16} />
+                  </button>
+                )}
               </div>
               
               <button
@@ -294,8 +399,9 @@ const LabourManagement = () => {
                   <th className="px-3 py-2.5 text-left text-xs font-semibold">Sr.</th>
                   <th className="px-3 py-2.5 text-left text-xs font-semibold">Name</th>
                   <th className="px-3 py-2.5 text-left text-xs font-semibold">Code</th>
-                  <th className="px-3 py-2.5 text-left text-xs font-semibold">Emirates ID</th>
-                  <th className="px-3 py-2.5 text-left text-xs font-semibold">Category</th>
+                  <th className="px-3 py-2.5 text-left text-xs font-semibold">Department</th>
+                  <th className="px-3 py-2.5 text-left text-xs font-semibold">Designation</th>
+                  <th className="px-3 py-2.5 text-left text-xs font-semibold">Joining Date</th>
                   <th className="px-3 py-2.5 text-left text-xs font-semibold">Video</th>
                   <th className="px-3 py-2.5 text-center text-xs font-semibold">Action</th>
                 </tr>
@@ -309,8 +415,9 @@ const LabourManagement = () => {
                     <td className="px-3 py-2 text-sm font-medium" style={{ color: themeUtils.getTextColor() }}>{index + 1}</td>
                     <td className="px-3 py-2 text-sm font-medium" style={{ color: themeUtils.getTextColor() }}>{labour.name}</td>
                     <td className="px-3 py-2 text-sm" style={{ color: themeUtils.getTextColor(false) }}>{labour.code}</td>
-                    <td className="px-3 py-2 text-sm" style={{ color: themeUtils.getTextColor(false) }}>{labour.emiratesId || 'N/A'}</td>
-                    <td className="px-3 py-2 text-sm" style={{ color: themeUtils.getTextColor(false) }}>{labour.category || 'N/A'}</td>
+                    <td className="px-3 py-2 text-sm" style={{ color: themeUtils.getTextColor(false) }}>{labour.department || 'N/A'}</td>
+                    <td className="px-3 py-2 text-sm" style={{ color: themeUtils.getTextColor(false) }}>{labour.designation || 'N/A'}</td>
+                    <td className="px-3 py-2 text-sm" style={{ color: themeUtils.getTextColor(false) }}>{formatDate(labour.joiningDate)}</td>
                     <td className="px-3 py-2">
                       <button
                         onClick={() => handlePlayVideo(labour.video)}
@@ -509,29 +616,11 @@ const LabourManagement = () => {
                     
                     <div>
                       <label className="block text-sm font-medium mb-1.5" style={{ color: themeUtils.getTextColor() }}>
-                        Emirates ID
-                      </label>
-                      <input
-                        type="text"
-                        value={formData.emiratesId}
-                        onChange={(e) => setFormData({ ...formData, emiratesId: e.target.value })}
-                        className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none text-sm"
-                        placeholder="Optional"
-                        style={{ 
-                          borderColor: themeUtils.getBorderColor(),
-                          backgroundColor: themeUtils.getBgColor("input"),
-                          color: themeUtils.getTextColor()
-                        }}
-                      />
-                    </div>
-
-                    <div>
-                      <label className="block text-sm font-medium mb-1.5" style={{ color: themeUtils.getTextColor() }}>
-                        Category <span className="text-red-500">*</span>
+                        Department <span className="text-red-500">*</span>
                       </label>
                       <select
-                        value={formData.category}
-                        onChange={(e) => setFormData({ ...formData, category: e.target.value })}
+                        value={formData.department}
+                        onChange={(e) => setFormData({ ...formData, department: e.target.value })}
                         className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none text-sm"
                         style={{ 
                           borderColor: themeUtils.getBorderColor(),
@@ -539,11 +628,49 @@ const LabourManagement = () => {
                           color: themeUtils.getTextColor()
                         }}
                       >
-                        <option value="">-- Select Category --</option>
-                        {categories.map(cat => (
-                          <option key={cat} value={cat}>{cat}</option>
+                        <option value="">-- Select Department --</option>
+                        {departments.map(dept => (
+                          <option key={dept} value={dept}>{dept}</option>
                         ))}
                       </select>
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium mb-1.5" style={{ color: themeUtils.getTextColor() }}>
+                        Designation <span className="text-red-500">*</span>
+                      </label>
+                      <select
+                        value={formData.designation}
+                        onChange={(e) => setFormData({ ...formData, designation: e.target.value })}
+                        className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none text-sm"
+                        style={{ 
+                          borderColor: themeUtils.getBorderColor(),
+                          backgroundColor: themeUtils.getBgColor("input"),
+                          color: themeUtils.getTextColor()
+                        }}
+                      >
+                        <option value="">-- Select Designation --</option>
+                        {designations.map(desig => (
+                          <option key={desig} value={desig}>{desig}</option>
+                        ))}
+                      </select>
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium mb-1.5" style={{ color: themeUtils.getTextColor() }}>
+                        Joining Date <span className="text-red-500">*</span>
+                      </label>
+                      <input
+                        type="date"
+                        value={formData.joiningDate}
+                        onChange={(e) => setFormData({ ...formData, joiningDate: e.target.value })}
+                        className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none text-sm"
+                        style={{ 
+                          borderColor: themeUtils.getBorderColor(),
+                          backgroundColor: themeUtils.getBgColor("input"),
+                          color: themeUtils.getTextColor()
+                        }}
+                      />
                     </div>
 
                     <div className="pt-3 flex gap-2">

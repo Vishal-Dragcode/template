@@ -1,7 +1,6 @@
-import React, { useState } from "react";
-import { Search, Calendar, Video, Download, X , Star } from "lucide-react";
+import React, { useState, useMemo } from "react";
+import { Search, Calendar, Video, Download, X, Star } from "lucide-react";
 import { useTheme } from "../../ui/Settings/themeUtils";
-
 
 function EvidenceGallery() {
   const { theme, themeUtils } = useTheme();
@@ -9,7 +8,8 @@ function EvidenceGallery() {
   const [selectedVideo, setSelectedVideo] = useState(null);
   const [recordsPerPage, setRecordsPerPage] = useState(10);
   const [searchTerm, setSearchTerm] = useState("");
-  const [selectedDate, setSelectedDate] = useState("");
+  const [fromDate, setFromDate] = useState("");
+  const [toDate, setToDate] = useState("");
 
   const alerts = [
     { 
@@ -32,6 +32,65 @@ function EvidenceGallery() {
     }
   ];
 
+  // Function to parse date string from "DD Mon YYYY" format to Date object
+  const parseDate = (dateStr) => {
+    const [day, month, year] = dateStr.split(' ');
+    const monthMap = {
+      'Jan': 0, 'Feb': 1, 'Mar': 2, 'Apr': 3, 'May': 4, 'Jun': 5,
+      'Jul': 6, 'Aug': 7, 'Sep': 8, 'Oct': 9, 'Nov': 10, 'Dec': 11
+    };
+    return new Date(parseInt(year), monthMap[month], parseInt(day));
+  };
+
+  // Function to format Date object to YYYY-MM-DD for input comparison
+  const formatDateForInput = (date) => {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  };
+
+  // Function to format Date object to display format
+  const formatDateForDisplay = (dateStr) => {
+    if (!dateStr) return "";
+    const date = new Date(dateStr + "T00:00:00");
+    return date.toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+  };
+
+  // Filter alerts based on search term and date range
+  const filteredAlerts = useMemo(() => {
+    let result = alerts;
+    
+    // Filter by search term
+    if (searchTerm) {
+      result = result.filter(alert => 
+        alert.id.toString().includes(searchTerm) ||
+        alert.date.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        alert.time.includes(searchTerm)
+      );
+    }
+    
+    // Filter by date range
+    if (fromDate || toDate) {
+      result = result.filter(alert => {
+        const alertDate = parseDate(alert.date);
+        const formattedAlertDate = formatDateForInput(alertDate);
+        
+        // Check if alert date is within the selected range
+        if (fromDate && toDate) {
+          return formattedAlertDate >= fromDate && formattedAlertDate <= toDate;
+        } else if (fromDate) {
+          return formattedAlertDate >= fromDate;
+        } else if (toDate) {
+          return formattedAlertDate <= toDate;
+        }
+        return true;
+      });
+    }
+    
+    return result;
+  }, [alerts, searchTerm, fromDate, toDate]);
+
   const handleViewVideo = (alert) => {
     setSelectedVideo(alert);
     setShowVideo(true);
@@ -39,7 +98,7 @@ function EvidenceGallery() {
 
   const exportToCSV = () => {
     const headers = ['Sr. No', 'Date', 'Time'];
-    const csvData = alerts.map((alert, index) => [
+    const csvData = filteredAlerts.map((alert, index) => [
       index + 1,
       alert.date,
       alert.time
@@ -57,6 +116,11 @@ function EvidenceGallery() {
     a.download = 'evidence_gallery.csv';
     a.click();
     window.URL.revokeObjectURL(url);
+  };
+
+  const clearDateFilter = () => {
+    setFromDate("");
+    setToDate("");
   };
 
   const headerGradientStyle = {
@@ -138,20 +202,56 @@ function EvidenceGallery() {
                 />
               </div>
               
-              {/* Date Filter */}
+              {/* Date Range Filter */}
               <div className="flex items-center gap-2">
-                <Calendar size={16} style={{ color: themeUtils.getTextColor(false) }} />
-                <input
-                  type="date"
-                  value={selectedDate}
-                  onChange={(e) => setSelectedDate(e.target.value)}
-                  className="px-3 py-1.5 text-sm rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none border"
-                  style={{
-                    borderColor: themeUtils.getBorderColor(),
-                    backgroundColor: themeUtils.getBgColor("input"),
-                    color: themeUtils.getTextColor(true)
-                  }}
-                />
+                <div className="flex items-center gap-1">
+                  <div className="relative">
+                    <Calendar 
+                      size={16} 
+                      className="absolute left-3 top-1/2 transform -translate-y-1/2" 
+                      style={{ color: themeUtils.getTextColor(false) }}
+                    />
+                    <input
+                      type="date"
+                      value={fromDate}
+                      onChange={(e) => setFromDate(e.target.value)}
+                      className="pl-9 pr-3 py-1.5 text-sm rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none border"
+                      style={{
+                        borderColor: themeUtils.getBorderColor(),
+                        backgroundColor: themeUtils.getBgColor("input"),
+                        color: themeUtils.getTextColor(true)
+                      }}
+                    />
+                  </div>
+                  <span style={{ color: themeUtils.getTextColor(false) }}>to</span>
+                  <div className="relative">
+                    <Calendar 
+                      size={16} 
+                      className="absolute left-3 top-1/2 transform -translate-y-1/2" 
+                      style={{ color: themeUtils.getTextColor(false) }}
+                    />
+                    <input
+                      type="date"
+                      value={toDate}
+                      onChange={(e) => setToDate(e.target.value)}
+                      className="pl-9 pr-3 py-1.5 text-sm rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none border"
+                      style={{
+                        borderColor: themeUtils.getBorderColor(),
+                        backgroundColor: themeUtils.getBgColor("input"),
+                        color: themeUtils.getTextColor(true)
+                      }}
+                    />
+                  </div>
+                </div>
+                {(fromDate || toDate) && (
+                  <button
+                    onClick={clearDateFilter}
+                    className="p-1 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
+                    style={{ color: themeUtils.getTextColor(false) }}
+                  >
+                    <X size={14} />
+                  </button>
+                )}
               </div>
               
               {/* Export Button */}
@@ -167,113 +267,154 @@ function EvidenceGallery() {
           </div>
         </div>
 
-        {/* Alert Grid */}
-       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-  {alerts.slice(0, recordsPerPage).map((alert) => (
-    <div
-      key={alert.id}
-      className="group relative rounded-xl overflow-hidden shadow-lg border transition-all duration-300 hover:shadow-2xl hover:-translate-y-1"
-      style={{ 
-        borderColor: themeUtils.getBorderColor(),
-        backgroundColor: themeUtils.getBgColor("card")
-      }}
-    >
- 
-      
-      {/* Card Header with gradient */}
-      <div
-        className="relative px-6 py-2 overflow-hidden"
-        style={headerGradientStyle}
-      >
-        <div className="absolute top-0 right-0 -mt-4 -mr-4 opacity-10">
-          <svg className="w-24 h-24 text-white" fill="currentColor" viewBox="0 0 20 20">
-            <path d="M9 2a1 1 0 000 2h2a1 1 0 100-2H9z" />
-            <path fillRule="evenodd" d="M4 5a2 2 0 012-2 1 1 0 000 2H6a2 2 0 100 4h2a2 2 0 100 4h2a1 1 0 100 2 2 2 0 01-2 2H4a2 2 0 01-2-2V7a2 2 0 012-2z" clipRule="evenodd" />
-          </svg>
-        </div>
-        
-        <div className="relative z-10">
-          <div className="flex items-center gap-2 mb-1">
-            <div className="p-1.5 bg-opacity-20 rounded-lg">
-              <Star className="w-5 h-5 text-white" strokeWidth={2.5} />
-            </div>
-            <h2 className="text-lg font-bold text-white">
-              Alert {alert.id}
-            </h2>
-          </div>
-          <div className="flex items-center gap-1 text-white opacity-90 text-sm">
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-            </svg>
-            <span>{alert.date}</span>
-          </div>
-        </div>
-      </div>
-      
-      {/* Card Body */}
-      <div className="px-6 py-5 space-y-4">
-        <div className="flex justify-between items-center py-2 border-b border-gray-100 dark:border-gray-800">
-          <div className="flex items-center gap-2">
-            <div className="p-1.5 rounded-lg" style={{ backgroundColor: themeUtils.getBgColor("secondary") }}>
-              <svg className="w-4 h-4" style={{ color: themeUtils.getTextColor(false) }} fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-              </svg>
-            </div>
-            <span className="text-sm font-medium" style={{ color: themeUtils.getTextColor(false) }}>
-              Time:
-            </span>
-          </div>
-          <span className="text-sm font-semibold px-2 py-1 rounded-md" style={{ 
-            color: themeUtils.getTextColor(true),
-            backgroundColor: themeUtils.getBgColor("secondary")
-          }}>
-            {alert.time}
-          </span>
-        </div>
-        
-        {alert.location && (
-          <div className="flex justify-between items-center py-2 border-b border-gray-100 dark:border-gray-800">
+        {/* Filter Info */}
+        {(fromDate || toDate) && (
+          <div className="mb-4 p-3 rounded-lg flex items-center justify-between" style={{ backgroundColor: themeUtils.getBgColor("card") }}>
             <div className="flex items-center gap-2">
-              <div className="p-1.5 rounded-lg" style={{ backgroundColor: themeUtils.getBgColor("secondary") }}>
-                <svg className="w-4 h-4" style={{ color: themeUtils.getTextColor(false) }} fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
-                </svg>
-              </div>
-              <span className="text-sm font-medium" style={{ color: themeUtils.getTextColor(false) }}>
-                Location:
+              <Calendar size={16} style={{ color: themeUtils.getTextColor(false) }} />
+              <span className="text-sm" style={{ color: themeUtils.getTextColor(false) }}>
+                Showing alerts for: 
+                {fromDate && (
+                  <span className="font-medium ml-1" style={{ color: themeUtils.getTextColor(true) }}>
+                    From: {formatDateForDisplay(fromDate)}
+                  </span>
+                )}
+                {fromDate && toDate && <span style={{ color: themeUtils.getTextColor(false) }}>, </span>}
+                {toDate && (
+                  <span className="font-medium ml-1" style={{ color: themeUtils.getTextColor(true) }}>
+                    To: {formatDateForDisplay(toDate)}
+                  </span>
+                )}
               </span>
             </div>
-            <span className="text-sm font-semibold" style={{ color: themeUtils.getTextColor(true) }}>
-              {alert.location}
-            </span>
+            <button
+              onClick={clearDateFilter}
+              className="text-sm px-3 py-1 rounded-md hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+              style={{ color: themeUtils.getTextColor(false) }}
+            >
+              Clear Filter
+            </button>
           </div>
         )}
-        
-        <button
-          onClick={() => handleViewVideo(alert)}
-          className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-lg font-medium text-sm transition-all duration-300 shadow-md hover:shadow-lg group"
-          style={getButtonStyle('primary')}
-        >
-          <Video size={18} className="group-hover:scale-110 transition-transform" />
-          View Video Evidence
-          <svg className="w-4 h-4 ml-1 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M14 5l7 7m0 0l-7 7m7-7H3" />
-          </svg>
-        </button>
-      </div>
-      
-     
-    </div>
-  ))}
-</div>
+
+        {/* Alert Grid */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+          {filteredAlerts.slice(0, recordsPerPage).map((alert) => (
+            <div
+              key={alert.id}
+              className="group relative rounded-xl overflow-hidden shadow-lg border transition-all duration-300 hover:shadow-2xl hover:-translate-y-1"
+              style={{ 
+                borderColor: themeUtils.getBorderColor(),
+                backgroundColor: themeUtils.getBgColor("card")
+              }}
+            >
+              {/* Card Header with gradient */}
+              <div
+                className="relative px-6 py-2 overflow-hidden"
+                style={headerGradientStyle}
+              >
+                <div className="absolute top-0 right-0 -mt-4 -mr-4 opacity-10">
+                  <svg className="w-24 h-24 text-white" fill="currentColor" viewBox="0 0 20 20">
+                    <path d="M9 2a1 1 0 000 2h2a1 1 0 100-2H9z" />
+                    <path fillRule="evenodd" d="M4 5a2 2 0 012-2 1 1 0 000 2H6a2 2 0 100 4h2a2 2 0 100 4h2a1 1 0 100 2 2 2 0 01-2 2H4a2 2 0 01-2-2V7a2 2 0 012-2z" clipRule="evenodd" />
+                  </svg>
+                </div>
+                
+                <div className="relative z-10">
+                  <div className="flex items-center gap-2 mb-1">
+                    <div className="p-1.5 bg-opacity-20 rounded-lg">
+                      <Star className="w-5 h-5 text-white" strokeWidth={2.5} />
+                    </div>
+                    <h2 className="text-lg font-bold text-white">
+                      Evidence {alert.id}
+                    </h2>
+                  </div>
+                  <div className="flex items-center gap-1 text-white opacity-90 text-sm">
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                    </svg>
+                    <span>{alert.date}</span>
+                  </div>
+                </div>
+              </div>
+              
+              {/* Card Body */}
+              <div className="px-6 py-5 space-y-4">
+                <div className="flex justify-between items-center py-2 border-b border-gray-100 dark:border-gray-800">
+                  <div className="flex items-center gap-2">
+                    <div className="p-1.5 rounded-lg" style={{ backgroundColor: themeUtils.getBgColor("secondary") }}>
+                      <svg className="w-4 h-4" style={{ color: themeUtils.getTextColor(false) }} fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                      </svg>
+                    </div>
+                    <span className="text-sm font-medium" style={{ color: themeUtils.getTextColor(false) }}>
+                      Time:
+                    </span>
+                  </div>
+                  <span className="text-sm font-semibold px-2 py-1 rounded-md" style={{ 
+                    color: themeUtils.getTextColor(true),
+                    backgroundColor: themeUtils.getBgColor("secondary")
+                  }}>
+                    {alert.time}
+                  </span>
+                </div>
+                
+                {alert.location && (
+                  <div className="flex justify-between items-center py-2 border-b border-gray-100 dark:border-gray-800">
+                    <div className="flex items-center gap-2">
+                      <div className="p-1.5 rounded-lg" style={{ backgroundColor: themeUtils.getBgColor("secondary") }}>
+                        <svg className="w-4 h-4" style={{ color: themeUtils.getTextColor(false) }} fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                        </svg>
+                      </div>
+                      <span className="text-sm font-medium" style={{ color: themeUtils.getTextColor(false) }}>
+                        Location:
+                      </span>
+                    </div>
+                    <span className="text-sm font-semibold" style={{ color: themeUtils.getTextColor(true) }}>
+                      {alert.location}
+                    </span>
+                  </div>
+                )}
+                
+                <button
+                  onClick={() => handleViewVideo(alert)}
+                  className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-lg font-medium text-sm transition-all duration-300 shadow-md hover:shadow-lg group"
+                  style={{ backgroundColor: themeUtils.getBgColor("primary"), color: themeUtils.getTextColor(true) }}
+                >
+                  <Video size={18} className="group-hover:scale-110 transition-transform" />
+                  View Video Evidence
+                  <svg className="w-4 h-4 ml-1 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M14 5l7 7m0 0l-7 7m7-7H3" />
+                  </svg>
+                </button>
+              </div>
+            </div>
+          ))}
+        </div>
 
         {/* Empty State */}
-        {alerts.length === 0 && (
+        {filteredAlerts.length === 0 && (
           <div className="text-center py-16">
-            <p className="text-lg" style={{ color: themeUtils.getTextColor(false) }}>
-              No evidence records found.
+            <div className="mx-auto w-24 h-24 rounded-full flex items-center justify-center mb-4" style={{ backgroundColor: themeUtils.getBgColor("secondary") }}>
+              <Calendar size={40} style={{ color: themeUtils.getTextColor(false) }} />
+            </div>
+            <p className="text-lg mb-2" style={{ color: themeUtils.getTextColor(false) }}>
+              No evidence records found for the selected filters.
             </p>
+            {(fromDate || toDate) && (
+              <button
+                onClick={clearDateFilter}
+                className="text-sm px-4 py-2 rounded-lg mt-2 transition-colors"
+                style={{
+                  backgroundColor: themeUtils.getBgColor("secondary"),
+                  color: themeUtils.getTextColor(true)
+                }}
+              >
+                Clear Date Filter
+              </button>
+            )}
           </div>
         )}
       </div>
@@ -292,7 +433,7 @@ function EvidenceGallery() {
             >
               <div className="text-white">
                 <h2 className="text-lg font-bold">
-                  Alert {selectedVideo.id} - Video Evidence
+                  Evidence {selectedVideo.id} - Video Evidence
                 </h2>
                 <p className="text-sm opacity-90">
                   {selectedVideo.date} at {selectedVideo.time}

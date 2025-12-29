@@ -30,27 +30,6 @@ const Sidebar = ({
   const { theme, themeUtils } = useTheme();
 
   const menuItems = [
-    // {
-    //   icon: Home,
-    //   label: "Dashboard",
-    //   path: "/dashboard",
-    //   hasSub: true,
-    //   subItems: [
-    //     {
-    //       label: "Dashboard Overview",
-    //       path: "/dashboard",
-    //     },
-    //     {
-    //       label: "Dashboard Reports",
-    //       path: "/dashboard/reports",
-    //     },
-    //     {
-    //       label: "Dashboard Analytics",
-    //       path: "/dashboard/analytics",
-    //     },
-    //   ],
-    // },
-
     {
       icon: Home,
       label: "Dashboard",
@@ -128,7 +107,7 @@ const Sidebar = ({
     <>
       {sidebarOpen && (
         <div
-          className="fixed inset-0 bg-black bg-opacity-50 z-40 lg:hidden"
+          className="fixed inset-0 z-40 backdrop-blur-sm lg:hidden"
           onClick={() => setSidebarOpen(false)}
         />
       )}
@@ -144,7 +123,22 @@ const Sidebar = ({
         />
       </button>
 
-      {/* Sidebar now properly fits the frame with auto/responsive width */}
+      {/* Toggle button for desktop - always visible, without shadow and rounded corners */}
+      <button
+        onClick={toggleSidebar}
+        className={`hidden lg:flex fixed top-4 z-40 p-2 transition-all duration-300 ${
+          isSidebarCollapsed ? "left-4" : "left-64"
+        }`}
+        style={{ backgroundColor: themeUtils.getBgColor("card") }}
+      >
+        <ChevronRight
+          className={`w-5 h-5 transition-transform ${
+            isSidebarCollapsed ? "" : "rotate-180"
+          }`}
+          style={{ color: themeUtils.getTextColor(false) }}
+        />
+      </button>
+
       <aside
         className={`
           fixed top-0 left-0 z-50 h-screen shadow-lg flex flex-col
@@ -161,27 +155,13 @@ const Sidebar = ({
           style={{ borderColor: themeUtils.getBorderColor() }}
         >
           <Logo isCollapsed={isSidebarCollapsed} />
-          <div className="flex items-center gap-2">
-            <button
-              onClick={toggleSidebar}
-              className="p-1.5 rounded-md transition-colors hover:bg-gray-200 dark:hover:bg-gray-800"
-              style={{ color: themeUtils.getTextColor(false) }}
-              title={isSidebarCollapsed ? "Expand sidebar" : "Collapse sidebar"}
-            >
-              <ChevronLeft
-                className={`w-4 h-4 transition-transform ${
-                  isSidebarCollapsed ? "rotate-180" : ""
-                }`}
-              />
-            </button>
-            <button
-              onClick={() => setSidebarOpen(false)}
-              className="p-1.5 rounded-md lg:hidden transition-colors hover:bg-gray-200 dark:hover:bg-gray-800"
-              style={{ color: themeUtils.getTextColor(false) }}
-            >
-              <X className="w-5 h-5" />
-            </button>
-          </div>
+          <button
+            onClick={() => setSidebarOpen(false)}
+            className="p-1.5 rounded-md lg:hidden transition-colors hover:bg-gray-200 dark:hover:bg-gray-800"
+            style={{ color: themeUtils.getTextColor(false) }}
+          >
+            <X className="w-5 h-5" />
+          </button>
         </div>
 
         <nav className="flex-1 px-2 py-4 space-y-1 overflow-y-auto hide-scrollbar">
