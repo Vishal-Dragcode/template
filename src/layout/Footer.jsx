@@ -7,11 +7,10 @@ const Footer = () => {
 
   return (
     <footer 
-      className="border-t fixed bottom-0 left-0 right-0 z-30"
+      className="border-t py-3 mt-auto"
       style={{ 
         backgroundColor: themeUtils.getBgColor('card'),
-        borderColor: themeUtils.getBorderColor(),
-        height: '5vh'  // Takes exactly 5% of viewport height
+        borderColor: themeUtils.getBorderColor()
       }}
     >
       <div className="max-w-7xl mx-auto h-full flex items-center justify-center px-2">

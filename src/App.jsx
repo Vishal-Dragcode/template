@@ -8,10 +8,6 @@ import { useState, useEffect } from "react";
 import { useTheme, ThemeProvider } from "./ui/Settings/themeUtils";
 import Sidebar from "./layout/Sidebar";
 import Header from "./layout/Header";
-import Dashboard from "./components/dashboard/Dashboard";
-import FaceRegistration from "./components/face-registration/FaceRegistration";
-import ProjectManagement from "./components/labour-list/ProjectManagement";
-import LiveAttendence from "./components/live-attendence/LiveAttendence";
 import LoginPage from "./(auth)/Login";
 import ForgotPasswordPage from "./(auth)/ForgotPass";
 import OTPVerificationPage from "./(auth)/OtpVerification";
@@ -20,8 +16,7 @@ import SignUpPage from "./(auth)/SignUp";
 import Profile from "./ui/Profile/Profile";
 import Footer from "./layout/Footer";
 import Setting from "./ui/Settings/Settings";
-import EvidenceGallery from "./components/evidence-gallery/EvidenceGallery";
-import AttendanceGallery from "./components/attendance-gallery/AttendanceGallery";
+import AdminDashboard from "./components/Admin/AdminDashboard";
 
 // Create a CSS string for the hide-scrollbar class
 const scrollbarStyles = `
@@ -47,7 +42,7 @@ const AppContent = () => {
   const { theme, themeUtils } = useTheme();
 
   useEffect(() => {
-    const userData = localStorage.getItem("user");
+    const userData = localStorage.getItem("LPGUser");
     if (userData) {
       setUser(JSON.parse(userData));
       setIsAuthenticated(true);
@@ -65,24 +60,14 @@ const AppContent = () => {
     };
   }, []);
 
-  const login = async (email, password) => {
-    if (email === "admin@example.com" && password === "password") {
-      const userData = {
-        id: 1,
-        name: "Admin User",
-        email: "admin@example.com",
-        role: "admin",
-      };
-      localStorage.setItem("user", JSON.stringify(userData));
-      setUser(userData);
-      setIsAuthenticated(true);
-      return { success: true };
-    }
-    return { success: false };
+  const login = (userData) => {
+    localStorage.setItem("LPGUser", JSON.stringify(userData));
+    setUser(userData);
+    setIsAuthenticated(true);
   };
 
   const logout = () => {
-    localStorage.removeItem("user");
+    localStorage.removeItem("LPGUser");
     setUser(null);
     setIsAuthenticated(false);
   };
@@ -147,22 +132,14 @@ const AppContent = () => {
                       backgroundColor: themeUtils.getBgColor("default"),
                     }}
                   >
-                    <div className="p-4">
+                    <div className="p-2 pb-2">
                       <Routes>
-                        <Route path="/" element={<Dashboard />} />
-                        <Route path="/dashboard" element={<Dashboard />} />
-                        <Route
-                          path="/face-registration"
-                          element={<FaceRegistration />}
-                        />
-
-                        <Route
-                          path="/project-management"
-                          element={<ProjectManagement />}
-                        />
-                        <Route path="/live-attendence" element={<LiveAttendence/>} />
-                        <Route path="/attendance-gallery" element={<AttendanceGallery/>} />
-                        <Route path="/evidence-gallery" element={<EvidenceGallery/>} />
+                        <Route path="/" element={<Navigate to="/profile" />} />
+                        <Route path="/dashboard" element={<Navigate to="/profile" />} />
+                        <Route path="/AdminDashboard" element={<AdminDashboard />} />
+                        <Route path="/SuperAdminDashboard" element={<AdminDashboard />} /> {/* Fallback to Admin for now */}
+                        <Route path="/ExecutiveDashboard" element={<AdminDashboard />} /> {/* Fallback to Admin for now */}
+                        <Route path="/CustomerDashboard" element={<AdminDashboard />} /> {/* Fallback to Admin for now */}
 
                         <Route path="/profile" element={<Profile />} />
                         <Route path="/settings" element={<Setting />} />

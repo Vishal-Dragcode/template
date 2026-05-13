@@ -6,12 +6,30 @@ import { useTheme } from '../Settings/themeUtils';
 
 const ProfileDropdown = ({ user, onLogout }) => {
   const [isOpen, setIsOpen] = useState(false);
+  const [profileData, setProfileData] = useState(null);
   const dropdownRef = useRef(null);
   const navigate = useNavigate();
   const location = useLocation();
   const { theme, themeUtils } = useTheme();
 
   const toggleDropdown = () => setIsOpen(!isOpen);
+
+  useEffect(() => {
+    const fetchProfile = async () => {
+      if (!user?.user_id) return;
+      try {
+        const response = await fetch(`${import.meta.env.VITE_API_URL}/api/v1/UserProfile/get-profile/${user.user_id}`);
+        const result = await response.json();
+        if (result.success) {
+          setProfileData(result.data);
+        }
+      } catch (error) {
+        console.error("Error fetching profile:", error);
+      }
+    };
+
+    fetchProfile();
+  }, [user]);
 
   useEffect(() => {
     const handleClickOutside = (event) => {
@@ -27,6 +45,14 @@ const ProfileDropdown = ({ user, onLogout }) => {
     onLogout();
     navigate('/login');
   };
+
+  const displayName = profileData 
+    ? `${profileData.first_name || ''} ${profileData.last_name || ''}`.trim() || profileData.username || user?.name
+    : user?.name || 'User';
+
+  const displayEmail = profileData?.email || user?.email || 'user@example.com';
+  const displayPhoto = profileData?.photo;
+
   // Check if current path matches profile or settings
   const isProfileActive = location.pathname === '/profile';
   const isSettingsActive = location.pathname === '/settings';
@@ -39,21 +65,25 @@ const ProfileDropdown = ({ user, onLogout }) => {
         style={{ backgroundColor: themeUtils.getBgColor('hover') }}
       >
         <div 
-          className="w-8 h-8 rounded-full shadow-md flex items-center justify-center"
+          className="w-8 h-8 rounded-full shadow-md flex items-center justify-center overflow-hidden"
           style={{ 
             backgroundColor: themeUtils.getBgColor('input'),
             boxShadow: `0 0 0 2px ${theme.headerBg || '#6366f1'}`
           }}
         >
-          <User 
-            className="w-6 h-6" 
-            style={{ 
-              color: theme.headerBg || '#6366f1',
-              backgroundColor: theme.headerBg ? `${theme.headerBg}15` : 'transparent',
-              padding: '2px',
-              borderRadius: '50%'
-            }} 
-          />
+          {displayPhoto ? (
+            <img src={displayPhoto} alt="Profile" className="w-full h-full object-cover" />
+          ) : (
+            <User 
+              className="w-6 h-6" 
+              style={{ 
+                color: theme.headerBg || '#6366f1',
+                backgroundColor: theme.headerBg ? `${theme.headerBg}15` : 'transparent',
+                padding: '2px',
+                borderRadius: '50%'
+              }} 
+            />
+          )}
         </div>
         <ChevronDown className="w-4 h-4 ml-1" style={{ color: themeUtils.getTextColor(false) }} />
       </button>
@@ -67,10 +97,10 @@ const ProfileDropdown = ({ user, onLogout }) => {
         >
           <div className="px-4 py-2 border-b" style={{ borderColor: themeUtils.getBorderColor() }}>
             <p className="text-sm font-medium" style={{ color: themeUtils.getTextColor(true) }}>
-              {user?.name || 'Admin User'}
+              {displayName}
             </p>
             <p className="text-xs" style={{ color: themeUtils.getTextColor(false) }}>
-              {user?.email || 'admin@example.com'}
+              {displayEmail}
             </p>
             <div className="mt-1">
               <span 
@@ -80,7 +110,7 @@ const ProfileDropdown = ({ user, onLogout }) => {
                   color: theme.headerBg || '#9333ea'
                 }}
               >
-                Administrator
+                {user?.role_name || 'User'}
               </span>
             </div>
           </div>

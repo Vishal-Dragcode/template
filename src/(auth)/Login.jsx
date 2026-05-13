@@ -37,29 +37,49 @@ const LoginPage = ({ onLogin }) => {
     setIsSubmitting(true);
     setError("");
 
-    // 🔐 Dummy credentials check
-    const dummyEmail = "admin@test.com";
-    const dummyPassword = "Admin@123";
+    try {
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/v1/authRouter/login`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          email: formData.email,
+          password: formData.password,
+        }),
+      });
 
-    if (formData.email === dummyEmail && formData.password === dummyPassword) {
-      navigate("/dashboard");
-      setIsSubmitting(false);
-      return;
-    }
+      const data = await response.json();
 
-    // fallback to onLogin if provided
-    if (onLogin) {
-      const result = await onLogin(formData.email, formData.password);
-      if (result.success) {
-        navigate("/dashboard");
+      if (data.success) {
+        onLogin(data.user);
+        
+        // Fetch the proper dashboard URL for this role
+        try {
+          const urlResponse = await fetch(`${import.meta.env.VITE_API_URL}/api/v1/Dashboard/get-Url`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ role_id: data.user.role_id })
+          });
+          const urlData = await urlResponse.json();
+          if (urlData.success && urlData.page_url) {
+            navigate(urlData.page_url);
+          } else {
+            navigate("/profile");
+          }
+        } catch (urlErr) {
+          console.error("Error fetching redirect URL:", urlErr);
+          navigate("/profile");
+        }
       } else {
-        setError(result.error);
+        setError(data.message || "Invalid email or password");
       }
-    } else {
-      setError("Invalid email or password");
+    } catch (err) {
+      console.error("Login error:", err);
+      setError("Something went wrong. Please try again.");
+    } finally {
+      setIsSubmitting(false);
     }
-
-    setIsSubmitting(false);
   };
 
   return (
