@@ -37,49 +37,43 @@ const LoginPage = ({ onLogin }) => {
     setIsSubmitting(true);
     setError("");
 
-    try {
-      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/v1/authRouter/login`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          email: formData.email,
-          password: formData.password,
-        }),
-      });
-
-      const data = await response.json();
-
-      if (data.success) {
-        onLogin(data.user);
+    // Simulate network delay for a smooth UI experience
+    setTimeout(() => {
+      // Mock Login Validation
+      if (formData.password === "Pass@123") {
+        let role_id = null;
+        let name = "";
         
-        // Fetch the proper dashboard URL for this role
-        try {
-          const urlResponse = await fetch(`${import.meta.env.VITE_API_URL}/api/v1/Dashboard/get-Url`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ role_id: data.user.role_id })
-          });
-          const urlData = await urlResponse.json();
-          if (urlData.success && urlData.page_url) {
-            navigate(urlData.page_url);
-          } else {
-            navigate("/profile");
-          }
-        } catch (urlErr) {
-          console.error("Error fetching redirect URL:", urlErr);
-          navigate("/profile");
+        if (formData.email === "superadmin@test.com") {
+          role_id = "1"; // Super Admin role
+          name = "Super Admin";
+        } else if (formData.email === "admin@test.com") {
+          role_id = "2"; // Admin role
+          name = "Admin";
+        } else if (formData.email === "employee@test.com") {
+          role_id = "3"; // Employee role
+          name = "Employee";
         }
-      } else {
-        setError(data.message || "Invalid email or password");
+
+        if (role_id) {
+          const mockUser = {
+            id: role_id,
+            name: name,
+            email: formData.email,
+            role_id: role_id,
+            token: "mock-demo-token-" + role_id
+          };
+          onLogin(mockUser);
+          navigate("/dashboard");
+          setIsSubmitting(false);
+          return;
+        }
       }
-    } catch (err) {
-      console.error("Login error:", err);
-      setError("Something went wrong. Please try again.");
-    } finally {
+      
+      // Fallback error if credentials don't match
+      setError("Invalid email or password. Please use the demo credentials.");
       setIsSubmitting(false);
-    }
+    }, 1000);
   };
 
   return (
@@ -88,48 +82,13 @@ const LoginPage = ({ onLogin }) => {
       <div
         className="absolute inset-0 bg-cover bg-center bg-no-repeat"
         style={{
-          backgroundImage:
-            "url('../../public/images/authbg.png')",
+          backgroundImage: "url('/images/authbg_new.png')",
         }}
       ></div>
 
-      {/* Left Side Panel */}
-      <div className="hidden lg:flex lg:w-3/5 relative z-10">
-        <div className="relative z-10 flex flex-col justify-center px-12 text-white">
-          <h1 className="text-4xl font-bold mb-4">Welcome Back!</h1>
-          <p className="text-lg mb-8">
-            Sign in to access your personalized dashboard and continue your
-            journey with us.
-          </p>
-
-          <div className="space-y-4">
-            <div className="flex items-center">
-              <div className="w-10 h-10 bg-black/80 bg-opacity-20 rounded-full flex items-center justify-center mr-4">
-                <LayoutDashboard className="w-5 h-5" />
-              </div>
-              <p className="text-lg">Personalized Dashboard</p>
-            </div>
-
-            <div className="flex items-center">
-              <div className="w-10 h-10 bg-black/80 bg-opacity-20 rounded-full flex items-center justify-center mr-4">
-                <Shield className="w-5 h-5" />
-              </div>
-              <p className="text-lg">Secure & Private</p>
-            </div>
-
-            <div className="flex items-center">
-              <div className="w-10 h-10 bg-black/80 bg-opacity-20 rounded-full flex items-center justify-center mr-4">
-                <Zap className="w-5 h-5" />
-              </div>
-              <p className="text-lg">Easy to Use</p>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Right Side - Login Form */}
-      <div className="w-full lg:w-2/5 flex items-center justify-center p-4 relative z-10 h-screen">
-        <div className="w-full max-w-sm bg-white/5 backdrop-blur-md rounded-lg border-2 border-gray-300 p-6">
+      {/* Centered Login Form */}
+      <div className="w-full flex items-center justify-center p-4 relative z-10 min-h-screen">
+        <div className="w-full max-w-sm bg-white/10 backdrop-blur-lg rounded-2xl border border-white/20 shadow-2xl p-8">
           <form className="text-center">
             <h2 className="text-white text-3xl font-bold mb-8">Sign In</h2>
 
@@ -207,6 +166,7 @@ const LoginPage = ({ onLogin }) => {
                 Sign up
               </Link>
             </p>
+
           </form>
         </div>
       </div>

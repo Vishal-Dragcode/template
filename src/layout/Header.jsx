@@ -8,13 +8,13 @@ const Header = ({ sidebarOpen, setSidebarOpen, user, onLogout }) => {
 
   return (
     <header
-      className={`shadow-sm border-b z-30 transition-colors duration-300`}
+      className={`h-16 shadow-sm border-b z-30 transition-colors duration-300`}
       style={{
         backgroundColor: themeUtils.getBgColor("card"),
         borderColor: themeUtils.getBorderColor(),
       }}
     >
-      <div className="flex items-center justify-between h-14 px-4 lg:px-8">
+      <div className="flex items-center justify-between h-full px-4 lg:px-8">
         <div className="flex items-center gap-4">
           {/* Mobile menu button - Only visible when sidebar is closed */}
           {!sidebarOpen && (

@@ -93,27 +93,38 @@ export const ThemeProvider = ({ children }) => {
         : "bg-gradient-to-br from-gray-900 via-gray-800 to-indigo-950",
   };
 
-  // Professional Theme Toggle Button
+  // Premium Theme Toggle Button
   const ThemeToggleButton = () => (
     <button
       onClick={toggleThemeMode}
-      className="relative inline-flex items-center pl-0 h-8 w-15 rounded-full transition-colors duration-300 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+      className={`relative inline-flex items-center h-8 w-16 rounded-full transition-colors duration-300 focus:outline-none focus:ring-2 focus:ring-offset-2 shadow-inner ${
+        theme.mode === "Dark"
+          ? "bg-gray-700 focus:ring-gray-600"
+          : ""
+      }`}
       style={{
-        backgroundColor: theme.mode === "Dark" ? "#D6D3D1" : "#0F172B",
+        backgroundColor: theme.mode === "Dark" ? undefined : (theme.headerBg || "#3b82f6")
       }}
       aria-label="Toggle dark/light mode"
     >
+      {/* Track Background Icons */}
+      <div className="absolute w-full flex justify-between px-1.5 pointer-events-none">
+        <Moon className={`w-4 h-4 transition-opacity duration-300 ${theme.mode === "Dark" ? "opacity-100 text-gray-400" : "opacity-0"}`} />
+        <Sun className={`w-4 h-4 transition-opacity duration-300 ${theme.mode === "Dark" ? "opacity-0" : "opacity-100"} ${
+          themeUtils.getTextColor(theme.headerBg) === "#FFFFFF" ? "text-white/60" : "text-black/40"
+        }`} />
+      </div>
+
+      {/* Sliding Knob */}
       <span
-        className="inline-block w-6 h-6 transform transition-transform duration-300 ease-in-out rounded-full bg-transparent shadow-lg flex items-center justify-center"
-        style={{
-          transform:
-            theme.mode === "Dark" ? "translateX(30px)" : "translateX(4px)",
-        }}
+        className={`z-10 flex items-center justify-center w-6 h-6 transform transition-transform duration-500 ease-in-out rounded-full shadow-md bg-white ${
+          theme.mode === "Dark" ? "translate-x-9" : "translate-x-1"
+        }`}
       >
         {theme.mode === "Dark" ? (
-          <Moon className="w-4 h-4 mt-1 ml-1 text-gray-800" />
+          <Moon className="w-4 h-4 text-gray-800" />
         ) : (
-          <Sun className="w-4 h-4 mt-1 ml-1 text-yellow-500" />
+          <Sun className="w-4 h-4 text-amber-500" />
         )}
       </span>
     </button>

@@ -20,6 +20,7 @@ import Logo from "./Logo";
 import { useTheme } from "../ui/Settings/themeUtils";
 import axios from "axios";
 import { API_URL } from "../api_config";
+import { getMenuByRole } from "./menuConfig";
 import * as FaIcons from "react-icons/fa";
 import * as MdIcons from "react-icons/md";
 import * as IoIcons from "react-icons/io";
@@ -45,20 +46,12 @@ const Sidebar = ({
 
   useEffect(() => {
     const user = JSON.parse(localStorage.getItem("LPGUser"));
+    // Since this is a role-based system, we pass the role directly.
     const userRole = user ? user.role_id : null;
-
-    if (userRole) {
-      axios
-        .get(`${API_URL}/api/v1/sidemenuRouter/get-menu`, {
-          params: { role_id: userRole },
-        })
-        .then((response) => {
-          setMenuData(response.data);
-        })
-        .catch((error) => {
-          console.error("Error fetching menu data:", error);
-        });
-    }
+    
+    // Use the local configuration based on role
+    const roleBasedMenu = getMenuByRole(userRole);
+    setMenuData(roleBasedMenu);
   }, []);
 
   const getIcon = (iconName) => {
@@ -140,19 +133,23 @@ const Sidebar = ({
         />
       </button>
 
-      {/* Toggle button for desktop - always visible, without shadow and rounded corners */}
+      {/* Sleek Edge Toggle Button - Placed fixed outside aside to prevent clipping */}
       <button
         onClick={toggleSidebar}
-        className={`hidden lg:flex fixed top-4 z-40 p-2 transition-all duration-300 ${
-          isSidebarCollapsed ? "left-4" : "left-64"
+        className={`hidden lg:flex fixed top-5 z-[60] p-1 rounded-full shadow-md border transition-all duration-300 hover:scale-110 ${
+          isSidebarCollapsed ? "left-16 -translate-x-1/2" : "left-72 -translate-x-1/2"
         }`}
-        style={{ backgroundColor: themeUtils.getBgColor("card") }}
+        style={{ 
+          borderColor: themeUtils.getBorderColor(),
+          backgroundColor: theme.headerBg || "#3b82f6",
+          color: themeUtils.getTextColor(theme.headerBg || "#3b82f6")
+        }}
+        aria-label="Toggle Sidebar"
       >
         <ChevronRight
-          className={`w-5 h-5 transition-transform ${
+          className={`w-4 h-4 transition-transform duration-300 ${
             isSidebarCollapsed ? "" : "rotate-180"
           }`}
-          style={{ color: themeUtils.getTextColor(false) }}
         />
       </button>
 
@@ -160,7 +157,7 @@ const Sidebar = ({
         className={`
           fixed top-0 left-0 z-50 h-screen shadow-lg flex flex-col
           transition-all duration-300 ease-in-out
-          ${isSidebarCollapsed ? "w-16" : "w-64"}
+          ${isSidebarCollapsed ? "w-16" : "w-72"}
           ${sidebarOpen ? "translate-x-0" : "-translate-x-full"}
           lg:translate-x-0 lg:relative lg:z-auto
           min-w-0 flex-shrink-0
@@ -168,7 +165,7 @@ const Sidebar = ({
         style={{ backgroundColor: themeUtils.getBgColor("card") }}
       >
         <div
-          className={`h-14 flex items-center justify-between px-3 border-b`}
+          className={`h-16 flex items-center justify-between px-4 border-b`}
           style={{ borderColor: themeUtils.getBorderColor() }}
         >
           <Logo isCollapsed={isSidebarCollapsed} />
@@ -197,8 +194,10 @@ const Sidebar = ({
                 <Link
                   to={path}
                   onClick={() => handleMenuClick(item, label)}
-                  className={`w-full flex items-center justify-between px-3 py-2.5 rounded-lg transition-all ${
-                    isItemActive ? "shadow-sm" : ""
+                  className={`w-full flex items-center justify-between px-4 py-3 mb-1 rounded-xl transition-all duration-300 relative group overflow-hidden ${
+                    isItemActive 
+                      ? "shadow-md font-semibold transform scale-[1.02]" 
+                      : "hover:bg-black/5 dark:hover:bg-white/5 font-medium opacity-80 hover:opacity-100"
                   }`}
                   style={{
                     backgroundColor: isItemActive
@@ -210,10 +209,10 @@ const Sidebar = ({
                   }}
                   title={isSidebarCollapsed ? label : ""}
                 >
-                  <div className="flex items-center gap-3">
+                  <div className="flex items-center gap-3 min-w-0 flex-1">
                     <Icon className="w-5 h-5 flex-shrink-0" />
                     <span
-                      className={`text-sm transition-opacity duration-300 ${
+                      className={`text-sm truncate transition-opacity duration-300 ${
                         isSidebarCollapsed ? "opacity-0 w-0" : "opacity-100"
                       }`}
                     >
@@ -249,21 +248,23 @@ const Sidebar = ({
                                 setSidebarOpen(false);
                               }
                             }}
-                            className={`flex items-center justify-between w-full text-left text-sm py-2 px-3 rounded transition ${
-                              isSubActive ? "font-medium" : ""
+                            className={`flex items-center justify-between w-full text-left text-sm py-2.5 px-4 mb-1 rounded-lg transition-all duration-300 ${
+                              isSubActive 
+                                ? "font-semibold shadow-sm transform translate-x-2" 
+                                : "hover:bg-black/5 dark:hover:bg-white/5 opacity-75 hover:opacity-100 hover:translate-x-1"
                             }`}
                             style={{
                               backgroundColor: isSubActive
-                                ? theme.navbarBg
+                                ? theme.navbarBg || "rgba(0,0,0,0.05)"
                                 : "transparent",
                               color: isSubActive
-                                ? "#000"
+                                ? themeUtils.getTextColor(theme.navbarBg) || "#000"
                                 : themeUtils.getTextColor(false),
                             }}
                           >
-                            <div className="flex items-center gap-3">
-                              <SubIcon className="w-4 h-4" />
-                              {sub.sub_menu}
+                            <div className="flex items-center gap-3 min-w-0 flex-1">
+                              <SubIcon className="w-4 h-4 flex-shrink-0" />
+                              <span className="truncate">{sub.sub_menu}</span>
                             </div>
                             {hasLevel1 && (
                               <ChevronRight
@@ -284,7 +285,7 @@ const Sidebar = ({
                                     key={l1.level1 + l1Index}
                                     to={l1.page_url}
                                     onClick={() => window.innerWidth < 1024 && setSidebarOpen(false)}
-                                    className={`flex items-center gap-3 w-full text-left text-xs py-1.5 px-3 rounded transition ${
+                                    className={`flex items-center gap-3 w-full text-left text-xs py-1.5 px-3 rounded transition min-w-0 ${
                                       isL1Active ? "font-medium" : ""
                                     }`}
                                     style={{
@@ -296,7 +297,7 @@ const Sidebar = ({
                                         : themeUtils.getTextColor(false),
                                     }}
                                   >
-                                    {l1.level1}
+                                    <span className="truncate w-full">{l1.level1}</span>
                                   </Link>
                                 );
                               })}

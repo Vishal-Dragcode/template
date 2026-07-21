@@ -7,15 +7,18 @@ const Footer = () => {
 
   return (
     <footer 
-      className="border-t py-3 mt-auto"
+      className="border-t py-2 mt-auto transition-colors duration-300"
       style={{ 
         backgroundColor: themeUtils.getBgColor('card'),
         borderColor: themeUtils.getBorderColor()
       }}
     >
-      <div className="max-w-7xl mx-auto h-full flex items-center justify-center px-2">
-        <p className="text-sm" style={{ color: themeUtils.getTextColor(false) }}>
-          © 2025 RajYug IT Solutions LLC. All rights reserved.
+      <div className="max-w-7xl mx-auto flex items-center justify-center px-4">
+        <p 
+          className="text-xs tracking-wide opacity-80 hover:opacity-100 transition-opacity duration-300" 
+          style={{ color: themeUtils.getTextColor(false) }}
+        >
+          &copy; {new Date().getFullYear()} <span className="font-semibold">RajYug IT Solutions LLC.</span> All rights reserved.
         </p>
       </div>
     </footer>
